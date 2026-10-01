@@ -55,11 +55,11 @@ async def diagnostics():
             else:
                 diagnostics["models"]["normquadstream"] = "failed_to_load"
                 diagnostics["status"] = "error"
-        except ImportError as exc:
-            diagnostics["models"]["normquadstream"] = f"import_error: {exc}"
+        except ImportError:
+            diagnostics["models"]["normquadstream"] = "import_error"
             diagnostics["status"] = "error"
-        except Exception as exc:
-            diagnostics["models"]["normquadstream"] = f"load_error: {exc}"
+        except Exception:
+            diagnostics["models"]["normquadstream"] = "load_error"
             diagnostics["status"] = "error"
     else:
         diagnostics["models"]["normquadstream"] = "missing_files"
