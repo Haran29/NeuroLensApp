@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, HTTPException, Depends
 from typing import Any, Dict
 from ..services.multimodal_aggregator import MultimodalAggregator
@@ -6,6 +7,7 @@ from ..core.firestore import get_firestore_service
 
 router = APIRouter(prefix="/multimodal", tags=["multimodal"])
 aggregator = MultimodalAggregator()
+logger = logging.getLogger(__name__)
 
 @router.post("/result/{session_id}")
 async def get_multimodal_result(session_id: str, current_user: dict = Depends(get_current_user)) -> Dict[str, Any]:
@@ -29,8 +31,9 @@ async def get_multimodal_result(session_id: str, current_user: dict = Depends(ge
         return result
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Aggregation error: {str(e)}")
+    except Exception:
+        logger.exception("Failed to calculate multimodal result for session %s", session_id)
+        raise HTTPException(status_code=500, detail="Unable to calculate multimodal result")
 
 @router.get("/history")
 async def get_assessment_history(current_user: dict = Depends(get_current_user)) -> Any:
@@ -47,8 +50,9 @@ async def get_assessment_history(current_user: dict = Depends(get_current_user))
         return history
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"History retrieval error: {str(e)}")
+    except Exception:
+        logger.exception("Failed to retrieve multimodal history")
+        raise HTTPException(status_code=500, detail="Unable to retrieve assessment history")
 
 @router.get("/latest")
 async def get_latest_multimodal_result(current_user: dict = Depends(get_current_user)) -> Dict[str, Any]:
@@ -67,5 +71,6 @@ async def get_latest_multimodal_result(current_user: dict = Depends(get_current_
         return latest
     except HTTPException:
         raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error retrieving latest assessment: {str(e)}")
+    except Exception:
+        logger.exception("Failed to retrieve latest multimodal result")
+        raise HTTPException(status_code=500, detail="Unable to retrieve latest assessment")

@@ -38,11 +38,6 @@ interface AssessmentEntry {
   };
 }
 
-// Convert model percentage to risk score (invert: high percentage = low risk, low percentage = high risk)
-const getRiskScore = (percentage: number): number => {
-  return Math.round(100 - percentage);
-};
-
 // Determine risk level based on risk score
 const getRiskLevel = (riskScore: number): 'low' | 'medium' | 'high' => {
   if (riskScore <= 30) return 'low';
@@ -62,47 +57,12 @@ const getRiskColor = (riskLevel: 'low' | 'medium' | 'high'): string => {
   }
 };
 
-// Helper to create assessment entry with risk scores
-// Input: model outputs (healthy percentages), output: risk scores
-const createAssessmentEntry = (
-  id: string,
-  date: string,
-  rawDate: Date,
-  overallHealthy: number, // Model output (healthy percentage)
-  categoriesHealthy: { wearable: number; voice: number; drawing: number; brain: number }
-): AssessmentEntry => {
-  const overallRisk = getRiskScore(overallHealthy);
-  return {
-    id,
-    date,
-    rawDate,
-    overallScore: overallRisk, // Store as risk score
-    trend: 'stable', // Will be calculated later
-    categories: {
-      wearable: getRiskScore(categoriesHealthy.wearable),
-      voice: getRiskScore(categoriesHealthy.voice),
-      drawing: getRiskScore(categoriesHealthy.drawing),
-      brain: getRiskScore(categoriesHealthy.brain),
-    },
-  };
-};
-
 // Formatting helper
 const formatDate = (isoString?: string) => {
   if (!isoString) return 'Unknown Date';
   try {
     const d = new Date(isoString);
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-  } catch {
-    return isoString;
-  }
-};
-
-const formatShortDate = (isoString?: string) => {
-  if (!isoString) return '??';
-  try {
-    const d = new Date(isoString);
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   } catch {
     return isoString;
   }
@@ -451,7 +411,12 @@ export default function HistoryScreen() {
       <SafeAreaView style={styles.centerContainer}>
         <AlertCircle size={48} color="#EF4444" />
         <Text style={styles.errorText}>{error}</Text>
-        <TouchableOpacity style={styles.retryButton} onPress={fetchHistory}>
+        <TouchableOpacity
+          style={styles.retryButton}
+          onPress={fetchHistory}
+          accessibilityRole="button"
+          accessibilityLabel="Retry loading history"
+        >
           <Text style={styles.retryButtonText}>Retry</Text>
         </TouchableOpacity>
       </SafeAreaView>
@@ -465,6 +430,8 @@ export default function HistoryScreen() {
         <TouchableOpacity
           onPress={() => router.back()}
           style={styles.backButton}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
         >
           <ArrowLeft size={24} color="#0F172A" />
         </TouchableOpacity>
@@ -529,7 +496,16 @@ export default function HistoryScreen() {
         {/* Assessment History Entries */}
         {historyData.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No assessments found yet.</Text>
+            <AlertCircle size={28} color="#94A3B8" />
+            <Text style={styles.emptyText}>{t('history.noData')}</Text>
+            <TouchableOpacity
+              style={styles.emptyActionButton}
+              onPress={() => router.push('/(tabs)')}
+              accessibilityRole="button"
+              accessibilityLabel="Go to home screen"
+            >
+              <Text style={styles.emptyActionText}>Go to Home</Text>
+            </TouchableOpacity>
           </View>
         ) : (
           historyData.map((entry) => (
@@ -622,10 +598,25 @@ const styles = StyleSheet.create({
   emptyContainer: {
     padding: 40,
     alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
   },
   emptyText: {
     color: '#64748B',
-    fontSize: 16,
+    fontSize: 15,
+    textAlign: 'center',
+  },
+  emptyActionButton: {
+    marginTop: 4,
+    backgroundColor: '#0F172A',
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+  },
+  emptyActionText: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+    fontSize: 13,
   },
   header: {
     flexDirection: 'row',

@@ -1,6 +1,7 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Header
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from typing import Optional
+import logging
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials
 
 from ..core.deps import get_current_user, security
 from ..core.firebase import verify_firebase_token
@@ -9,6 +10,7 @@ from ..schemas.auth import RegisterRequest
 from ..schemas.user import UserCreate, UserUpdate, UserResponse
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
+logger = logging.getLogger(__name__)
 
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
@@ -18,10 +20,8 @@ async def register_user(
 ):
     token = credentials.credentials
     firebase_user = await verify_firebase_token(token)
-    
-    print(f"DEBUG: Registering user {request.email}")
-    print(f"DEBUG: Request data: {request.dict()}")
-    
+    logger.info("Handling registration for %s", request.email)
+
     user_dao = UserDAO()
     
     existing_user = user_dao.get_by_firebase_uid(firebase_user['uid'])

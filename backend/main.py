@@ -1,23 +1,25 @@
 from contextlib import asynccontextmanager
-from app.core.firebase import initialize_firebase
-initialize_firebase()
+import logging
+import os
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.routes import voice_analysis
-from app.routes import auth
-from app.routes import drawing_prediction
-from app.routes import voice_multimodal
-from app.routes import cognitive_analysis    
-from app.routes import cognitive_raw_data
-from app.routes import wearable_prediction
-from app.routes import multimodal_result
-from app.routes import health
 from app.core.config import settings
-import logging
+from app.core.firebase import initialize_firebase
+from app.routes import auth
+from app.routes import cognitive_analysis
+from app.routes import cognitive_raw_data
+from app.routes import drawing_prediction
+from app.routes import health
+from app.routes import multimodal_result
+from app.routes import voice_analysis
+from app.routes import voice_multimodal
+from app.routes import wearable_prediction
 import uvicorn
 
+logging.basicConfig(level=getattr(logging, settings.LOG_LEVEL.upper(), logging.INFO))
 logger = logging.getLogger(__name__)
+initialize_firebase()
 
 
 @asynccontextmanager
@@ -72,7 +74,7 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.BACKEND_CORS_ORIGINS,
-    allow_credentials=True,
+    allow_credentials="*" not in settings.BACKEND_CORS_ORIGINS,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -101,6 +103,5 @@ async def health_check():
 
 
 if __name__ == "__main__":
-    import os
     port = int(os.environ.get("PORT", 8080))
     uvicorn.run(app, host="0.0.0.0", port=port)

@@ -1,27 +1,44 @@
 # NeuroLens Backend
 
-FastAPI backend for NeuroLens application.
+FastAPI service powering authentication, assessment ingestion, and multimodal risk aggregation.
 
-## Quick Start
+## Setup
 
-```powershell
-# Navigate to backend
+```bash
 cd backend
-
-# Create and activate virtual environment
 python -m venv venv
-.\venv\Scripts\Activate.ps1
+source venv/bin/activate   # Windows: .\venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
 
-# Install dependencies (using uv - faster)
-uv pip install -r requirements.txt
+## Run
 
-# Run development server
+```bash
 uvicorn main:app --reload
 ```
 
-Server runs at: `http://localhost:8000`
+Default URL: `http://localhost:8000`
 
+## Environment
 
+Create `backend/.env` using `backend/.env.example`.
 
+Important variables:
+- `FIREBASE_ADMIN_SDK_PATH`
+- `BACKEND_CORS_ORIGINS`
+- `API_V1_STR`
+- `PROJECT_NAME`
+- `LOG_LEVEL`
+- `MODEL_SERVER_URL`
 
+## Validation
 
+```bash
+python -m compileall main.py app
+```
+
+## Health endpoints
+
+- `GET /health/ready` – readiness probe
+- `GET /health/diagnostics` – model/dependency diagnostics

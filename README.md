@@ -1,146 +1,63 @@
-# NeuroLens
+# NeuroLensApp
 
-> A full-stack platform for exploring audio, speech, and signal-based insights through a mobile application and Python-powered analysis backend.
+NeuroLensApp is a full-stack Parkinson’s risk-assessment platform:
+- **Frontend:** Expo + React Native mobile app (`frontend/NeuroLens`)
+- **Backend:** FastAPI service for multimodal analysis (`backend`)
 
-NeuroLens combines an Expo/React Native frontend with a FastAPI backend to support multimodal data collection, processing, and analysis. The project is designed for assistive technology, experimentation, and research-oriented workflows involving speech, audio, and sensor data.
+The app collects wearable, voice, drawing, and cognitive signals and presents a combined risk assessment with history tracking.
 
-> **Project status:** NeuroLens is under active development. Some functionality may require additional configuration, platform permissions, or a development build.
-
-## ✨ Features
-
-- Cross-platform mobile frontend powered by Expo and React Native
-- File-based navigation with Expo Router
-- Audio and speech-related functionality
-- Bluetooth device integration through `react-native-ble-plx`
-- Firebase client and Firebase Admin SDK integration
-- FastAPI backend for application and analysis services
-- Audio feature extraction using libraries such as Librosa and Parselmouth
-- Speech-to-text support through OpenAI Whisper
-- Machine-learning workflows using PyTorch, scikit-learn, XGBoost, SHAP, and SciPy
-- Cloud Build configuration for deployment workflows
-
-## 🏗️ Architecture
+## Repository Structure
 
 ```text
 NeuroLensApp/
 ├── frontend/
-│   └── NeuroLens/       # Expo / React Native mobile application
-├── backend/              # FastAPI and machine-learning backend
-├── cloudbuild.yaml       # Cloud Build configuration
+│   └── NeuroLens/          # Expo/React Native app (TypeScript)
+├── backend/                # FastAPI app + ML inference services (Python)
+├── cloudbuild.yaml         # Cloud Build / Cloud Run deployment config
 └── README.md
 ```
 
-The application is split into two primary components:
-
-| Component | Technologies | Purpose |
-| --- | --- | --- |
-| Frontend | TypeScript, Expo, React Native, Firebase | Mobile user experience, navigation, audio interaction, and device connectivity |
-| Backend | Python, FastAPI, PyTorch, scikit-learn | API services, data processing, audio analysis, and machine-learning workflows |
-
-## 🧰 Technology Stack
+## Tech Stack
 
 ### Frontend
-
-- TypeScript
-- React Native
 - Expo SDK 54
+- React Native + TypeScript
 - Expo Router
-- React Navigation
-- Firebase
 - Axios
-- Expo Audio and speech packages
-- React Native Bluetooth Low Energy
-- React Native Reanimated
-- React Native Web
+- Firebase Auth
 
 ### Backend
+- FastAPI + Uvicorn
+- Firebase Admin SDK + Firestore
+- Pydantic Settings
+- NumPy / pandas / SciPy / scikit-learn / PyTorch
+- Whisper + audio feature extraction tooling
 
-- Python
-- FastAPI
-- Uvicorn
-- Firebase Admin SDK
-- SQLAlchemy
-- Pydantic
-- NumPy
-- pandas
-- SciPy
-- PyTorch
-- scikit-learn
-- XGBoost
-- SHAP
-- Librosa
-- SoundFile
-- Parselmouth
-- OpenAI Whisper
+## Prerequisites
 
-## ✅ Prerequisites
+- Node.js 18+ and npm
+- Python 3.10+
+- Firebase project credentials for backend auth/firestore
+- Android Studio / Xcode (for native mobile targets)
 
-Install the following before getting started:
+## Quick Start
 
-- Node.js and npm
-- Python 3.10 or newer
-- Git
-- Expo tooling and the platform tools required for your target device
-- Android Studio for Android development, or Xcode for iOS development
-- FFmpeg-compatible system support for audio processing
+Run frontend and backend in separate terminals.
 
-Depending on the features you use, you may also need:
-
-- A physical Android or iOS device
-- Bluetooth hardware
-- Platform-specific microphone, Bluetooth, and media permissions
-- An Expo development build rather than Expo Go
-
-## 🚀 Getting Started
-
-Clone the repository:
-
-```bash
-git clone https://github.com/Haran29/NeuroLensApp.git
-cd NeuroLensApp
-```
-
-The frontend and backend run independently, so use separate terminal windows.
-
-### 1. Start the backend
-
-#### macOS / Linux
+### 1) Backend setup
 
 ```bash
 cd backend
-
-python3 -m venv venv
-source venv/bin/activate
-
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
-
-uvicorn main:app --reload
-```
-
-#### Windows PowerShell
-
-```powershell
-cd backend
-
 python -m venv venv
-.\venv\Scripts\Activate.ps1
-
+source venv/bin/activate   # Windows: .\venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
-
 uvicorn main:app --reload
 ```
 
-The development server runs at:
+Backend default URL: `http://localhost:8000`
 
-```text
-http://localhost:8000
-```
-
-### 2. Start the frontend
-
-Open another terminal:
+### 2) Frontend setup
 
 ```bash
 cd frontend/NeuroLens
@@ -148,9 +65,7 @@ npm install
 npm start
 ```
 
-Expo will display available options for opening the application on a development build, emulator, simulator, web browser, or connected device.
-
-You can also use the project scripts directly:
+Useful frontend scripts:
 
 ```bash
 npm run android
@@ -160,72 +75,80 @@ npm run lint
 npm run build
 ```
 
-> Native functionality such as Bluetooth, microphone access, and some audio features may require a development build and additional platform configuration. Follow the relevant Expo and React Native platform setup instructions for your environment.
+## Environment Configuration
 
-## ⚙️ Configuration
+### Backend (`backend/.env`)
 
-Configuration values should be provided through environment variables or local configuration files appropriate for each environment.
+Use `backend/.env.example` as a template.
 
-Before running the complete application, review:
+| Variable | Purpose | Default |
+|---|---|---|
+| `API_V1_STR` | API prefix | `/api` |
+| `PROJECT_NAME` | OpenAPI/app title | `NeuroLens API` |
+| `LOG_LEVEL` | Backend log level | `INFO` |
+| `DATABASE_URL` | Local DB URL (legacy/local tooling) | `sqlite:///./neurolens.db` |
+| `FIREBASE_ADMIN_SDK_PATH` | Firebase Admin JSON path (relative to `backend/` or absolute) | `firebase-admin-sdk.json` |
+| `BACKEND_CORS_ORIGINS` | Allowed origins (comma-separated or JSON list) | `*` |
+| `MODEL_SERVER_URL` | Optional remote model endpoint | HF Space URL |
 
-- Firebase client configuration in the frontend
-- Firebase Admin credentials for the backend
-- Backend service configuration
-- Local API connection settings
-- Native permissions for microphone, Bluetooth, and media access
+### Frontend
 
-Do not commit private keys, service-account files, API keys, or other secrets to the repository.
+| Variable | Purpose |
+|---|---|
+| `EXPO_PUBLIC_API_BASE_URL` | Override backend base URL for device/emulator testing |
 
-## 📁 Project Documentation
+If not set, the app uses the currently configured deployed backend URL in `frontend/NeuroLens/constants/api.ts`.
 
-Additional documentation is available in the component directories:
+## Frontend/Backend Workflow
 
-- [Backend README](backend/README.md)
-- [Frontend README](frontend/NeuroLens/README.md)
+- Frontend API client: `frontend/NeuroLens/services/api.ts`
+- Backend route registration: `backend/main.py`
+- API modules: `backend/app/routes/*`
+- Multimodal endpoints used by the app:
+  - `GET /api/multimodal/history`
+  - `GET /api/multimodal/latest`
+  - `POST /api/multimodal/result/{session_id}`
 
-## 🧪 Development Notes
+## Validation Commands
 
-### Frontend linting
-
+### Frontend
 ```bash
 cd frontend/NeuroLens
 npm run lint
 ```
 
-### Backend development server
-
+### Backend
 ```bash
 cd backend
-uvicorn main:app --reload
+python -m compileall main.py app
 ```
 
-The backend automatically reloads when Python source files change during development.
+> Note: There is currently no established backend test suite in `backend/tests`.
 
-## 🛠️ Contributing
+## Deployment
 
-Contributions and improvements are welcome.
+`cloudbuild.yaml` builds the backend Docker image and deploys it to Cloud Run.
 
-A typical contribution workflow is:
+## Troubleshooting
 
-1. Create a feature branch.
-2. Make focused changes.
-3. Run the relevant frontend or backend checks.
-4. Update documentation when behavior or setup changes.
-5. Open a pull request with a clear description of the changes.
+- **`expo: not found` when running lint/start**
+  - Run `npm install` inside `frontend/NeuroLens`.
 
-Please avoid committing generated files, credentials, local environments, or device-specific configuration.
+- **401/403 from backend auth endpoints**
+  - Confirm Firebase Admin credentials exist at `FIREBASE_ADMIN_SDK_PATH`.
+  - Ensure the frontend token is being stored and sent in `Authorization` headers.
 
-## 🗺️ Suggested Future Work
+- **Mobile app cannot hit local backend**
+  - Set `EXPO_PUBLIC_API_BASE_URL` to a reachable host/IP and restart Expo.
 
-Potential areas for future development include:
+- **Health diagnostics indicate missing model files**
+  - Check `backend/app/models` artifacts and deployment packaging.
 
-- Expanded API and component documentation
-- Automated frontend and backend testing
-- Reproducible model and dataset management
-- Improved production deployment documentation
-- More detailed Bluetooth and audio setup guides
-- Screenshots or demonstrations of supported workflows
+## Security Notes
 
-## 📄 License
+- Never commit Firebase service-account files, tokens, or private credentials.
+- Keep `.env` local and use secret managers in deployed environments.
 
-No license has been specified for this repository yet. Until a license is added, usage and redistribution rights remain subject to the repository owner's rights.
+## License
+
+No explicit license is currently defined in this repository.

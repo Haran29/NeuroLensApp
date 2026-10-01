@@ -67,7 +67,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const token = await firebaseUser.getIdToken();
       await AsyncStorage.setItem('authToken', token);
-      console.log('Token: ', token);
       const profile = await authService.getUserProfile();
       setUserProfile(profile);
     } catch (error) {

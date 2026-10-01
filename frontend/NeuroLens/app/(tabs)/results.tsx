@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -9,7 +9,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter } from 'expo-router';
 import {
   Watch,
   Mic,
@@ -19,7 +19,6 @@ import {
   AlertCircle,
   Info,
   ArrowLeft,
-  Activity,
 } from 'lucide-react-native';
 import Svg, { Circle } from 'react-native-svg';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -173,9 +172,8 @@ const ProgressBar = ({ riskScore }: { riskScore: number }) => {
 
 export default function ResultsScreen() {
   const router = useRouter();
-  const params = useLocalSearchParams();
   const { t } = useLanguage();
-  const { sessionId, completedTasks, isSessionComplete } = useAssessment();
+  const { sessionId, completedTasks } = useAssessment();
 
   const defaultResults = useMemo(() => getInitialTestResults(t), [t]);
   const [testResults, setTestResults] = useState<TestResult[]>([]);
@@ -183,59 +181,55 @@ export default function ResultsScreen() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchLatestResults = async () => {
-      setIsLoading(true);
-      setError(null);
-      try {
-        let data;
+  const fetchLatestResults = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      let data;
 
-        // 1. Try to fetch / calculate results for current session if tasks are done
-        if (sessionId && completedTasks.length > 0) {
-          try {
-            const response = await api.post(`/api/multimodal/result/${sessionId}`);
-            data = response.data;
-          } catch (sessionErr) {
-            console.warn('Session aggregation failed, falling back to latest history:', sessionErr);
-          }
-        }
-
-        // 2. If no current session data, fetch latest from history
-        if (!data) {
-          const response = await api.get('/api/multimodal/latest');
+      // 1. Try to fetch / calculate results for current session if tasks are done
+      if (sessionId && completedTasks.length > 0) {
+        try {
+          const response = await api.post(`/api/multimodal/result/${sessionId}`);
           data = response.data;
+        } catch (sessionErr) {
+          console.warn('Session aggregation failed, falling back to latest history:', sessionErr);
         }
-
-        // Map individual_scores (0-100 risk) back to percentage-health (0-100)
-        // Since getRiskScore(percentage) = 100 - percentage
-        // percentage = 100 - risk_score
-
-        const individual = data.individual_scores || {};
-        const updatedResults: TestResult[] = [
-          createTestResult('wearable', t('history.categories.wearable'), 100 - (individual.wearable || 0), Watch),
-          createTestResult('voice', t('history.categories.voice'), 100 - (individual.voice || 0), Mic),
-          createTestResult('drawing', t('history.categories.drawing'), 100 - (individual.drawing || 0), PenTool),
-          createTestResult('cognitive', t('history.categories.brain'), 100 - (individual.cognitive || 0), Brain),
-        ];
-
-        setTestResults(updatedResults);
-        setOverallScore(data.final_score ?? data.final_multimodal_risk ?? 0);
-      } catch (err: any) {
-        console.error('Error fetching latest results:', err);
-        if (err.response?.status === 404) {
-          setError('No assessment data found. Start a test to see results.');
-        } else {
-          setError('Failed to load latest results');
-        }
-        setTestResults(defaultResults);
-        setOverallScore(0);
-      } finally {
-        setIsLoading(false);
       }
-    };
 
+      // 2. If no current session data, fetch latest from history
+      if (!data) {
+        const response = await api.get('/api/multimodal/latest');
+        data = response.data;
+      }
+
+      const individual = data.individual_scores || {};
+      const updatedResults: TestResult[] = [
+        createTestResult('wearable', t('history.categories.wearable'), 100 - (individual.wearable || 0), Watch),
+        createTestResult('voice', t('history.categories.voice'), 100 - (individual.voice || 0), Mic),
+        createTestResult('drawing', t('history.categories.drawing'), 100 - (individual.drawing || 0), PenTool),
+        createTestResult('cognitive', t('history.categories.brain'), 100 - (individual.cognitive || 0), Brain),
+      ];
+
+      setTestResults(updatedResults);
+      setOverallScore(data.final_score ?? data.final_multimodal_risk ?? 0);
+    } catch (err: any) {
+      console.error('Error fetching latest results:', err);
+      if (err.response?.status === 404) {
+        setError('No assessment data found. Start a test to see results.');
+      } else {
+        setError('Failed to load latest results');
+      }
+      setTestResults(defaultResults);
+      setOverallScore(0);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [completedTasks.length, defaultResults, sessionId, t]);
+
+  useEffect(() => {
     fetchLatestResults();
-  }, [t, defaultResults, sessionId, completedTasks.length]);
+  }, [fetchLatestResults]);
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -244,6 +238,8 @@ export default function ResultsScreen() {
         <TouchableOpacity
           onPress={() => router.back()}
           style={styles.backButton}
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
         >
           <ArrowLeft size={24} color="#0F172A" />
         </TouchableOpacity>
@@ -285,8 +281,18 @@ export default function ResultsScreen() {
 
         {error && (
           <View style={styles.errorContainer}>
-            <AlertCircle size={20} color="#EF4444" />
-            <Text style={styles.errorText}>{error}</Text>
+            <View style={styles.errorMessageRow}>
+              <AlertCircle size={20} color="#EF4444" />
+              <Text style={styles.errorText}>{error}</Text>
+            </View>
+            <TouchableOpacity
+              style={styles.retryButton}
+              onPress={fetchLatestResults}
+              accessibilityRole="button"
+              accessibilityLabel="Retry loading results"
+            >
+              <Text style={styles.retryButtonText}>Retry</Text>
+            </TouchableOpacity>
           </View>
         )}
 
@@ -629,18 +635,36 @@ const styles = StyleSheet.create({
     color: '#64748B',
   },
   errorContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'column',
+    alignItems: 'flex-start',
     backgroundColor: '#FEF2F2',
     padding: 12,
     borderRadius: 12,
     marginBottom: 16,
+    gap: 10,
+  },
+  errorMessageRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: 8,
   },
   errorText: {
     fontSize: 14,
     color: '#EF4444',
     flex: 1,
+  },
+  retryButton: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  retryButtonText: {
+    color: '#B91C1C',
+    fontWeight: '600',
+    fontSize: 13,
   },
   multimodalButton: {
     backgroundColor: '#6366F1',
